@@ -24,7 +24,7 @@ func getpid() int {
 	return pid
 }
 
-func backserver( sfunc func() )  {
+func Backserver( sfunc func() )  {
 	if len(os.Args) > 1{
 		act:=os.Args[1]
 		switch act {
