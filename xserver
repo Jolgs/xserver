@@ -1,0 +1,75 @@
+package xserver
+
+import (
+	"fmt"
+	"github.com/zh-five/xdaemon"
+	"io/ioutil"
+	"log"
+	"os"
+	"strconv"
+	"syscall"
+)
+
+func showUsage() {
+	fmt.Println("usage: /start/status/stop")
+}
+
+func getpid() int {
+	content, err := ioutil.ReadFile("me.pid")
+	if err != nil {
+		fmt.Println("read file failed, err:", err)
+		return 0
+	}
+	pid, err := strconv.Atoi(string(content))
+	return pid
+}
+
+func backserver( sfunc func() )  {
+	if len(os.Args) > 1{
+		act:=os.Args[1]
+		switch act {
+		case "start":
+			logFile := "daemon.log"
+			fmt.Println("Starting...")
+			xdaemon.Background(logFile, true)
+			file, err := os.OpenFile("me.pid", os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
+			if err != nil {
+				fmt.Println("open file failed, err:", err)
+			}
+			pid:=fmt.Sprintf("%v",os.Getpid())
+			log.Println(pid)
+			file.WriteString(pid)
+			file.Close()
+			sfunc()
+		case "status":
+			pid:=getpid()
+			if pid>1{
+				if err := syscall.Kill(pid, 0); err == nil {
+					fmt.Println("Runing...")
+				}else {
+					fmt.Println("No Runing...")
+				}
+			}else {
+				fmt.Println("No Runing...")
+			}
+		case "stop":
+			pid:=getpid()
+			if pid>1{
+				err := syscall.Kill(pid, syscall.SIGKILL)
+				if err != nil {
+					fmt.Println("kill process team is failed, err:", err)
+				}
+				fmt.Println(" Stop Success...")
+
+			}else {
+				fmt.Println(" Not Process Runing...")
+			}
+			//fmt.Println(" Stop Succe...")
+		default:
+			showUsage()
+		}
+
+	}else {
+		showUsage()
+	}
+}
